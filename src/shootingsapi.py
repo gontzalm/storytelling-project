@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-mpl.rcParams["figure.figsize"] = (10, 6)
+mpl.rcParams["figure.figsize"] = (10, 5)
 plt.style.use("ggplot")
 
 def count_total(data, state=None):
@@ -43,32 +43,33 @@ def count_total(data, state=None):
 
 def show_trend(data, attr=None, time_interval=None, state=None, city=None):
     """
-    Show death trend (total deaths by month).
+    Plot death trend (total deaths by month).
 
     Args:
         data (DataFrame): DataFrame containing the shootings data.
-        attr (str): Wether to separate deaths by attr.
-        time_interval (tuple of int, optional): Time interval to show, in years.
-        state (str, optional): State to show.
-        city (str, optional): City to show. "state" should be None if this parameter is used.
+        attr (str, optional): Group deaths by this attribute.
+        time_interval (tuple of int, optional): Time interval to consider, in years.
+        state (str, optional): State to plot.
+        city (str, optional): City to plot. "state" should be None if this parameter is used.
 
     Returns:
         None.
     """
     df = data.copy()
     start, stop = np.min(df.index.year), np.max(df.index.year)
-    title = "Death trend"
+    title = "Death Trend"
     if state:
         df = df[df["State"] == state]
-        title += f" in the state of {state}"
+        title += f" in the State of {state}"
     elif city:
         df = df[df["City"] == city]
-        title += f" in the city of {city}"
+        title += f" in the City of {city}"
     else:
         title += f" in the US"
     if time_interval:
         start, stop = (str(year) for year in time_interval)
         df = df[start:stop]
+    title += f" in the Years {start}-{stop}"
     if attr:
         ax = df.pivot_table(
             values="State",
@@ -79,31 +80,30 @@ def show_trend(data, attr=None, time_interval=None, state=None, city=None):
         ax.set(xlabel="Date")
     else:
         ax = df.resample("M")["State"].count().plot()
-    title += f" in the years {start}-{stop}"
     ax.set(title=title, ylabel="Monthly Deaths")
 
 def age_dist(data, rows=None, cols=None, state=None, city=None):
     """
-    Show age distplot.
+    Plot age distplot.
 
     Args:
         data (DataFrame): DataFrame containing the shootings data.
-        rows (str or list of str): Attribute to show in the FacetGrid rows.
-        cols (str or list of str): Attribute to show in the FacetGrid columns.
-        state (str, optional): State to show.
-        city (str, optional): City to show. "state" should be None if this parameter is used.
+        rows (str or list of str): Attributes to show in the FacetGrid rows.
+        cols (str or list of str): Attributes to show in the FacetGrid columns.
+        state (str, optional): State to plot.
+        city (str, optional): City to plot. "state" should be None if this parameter is used.
 
     Returns:
         None.
     """
     df = data.copy()
-    title = "Age distribution of victims"
+    title = "Age Distribution of Victims"
     if state:
         df = df[df["State"] == state]
-        title += f" in the state of {state}"
+        title += f" in the State of {state}"
     elif city:
         df = df[df["City"] == city]
-        title += f" in the city of {city}"
+        title += f" in the City of {city}"
     else:
         title += f" in the US"
     if rows or cols: # use FacetGrid
@@ -121,31 +121,33 @@ def age_dist(data, rows=None, cols=None, state=None, city=None):
     
 def race_pie(data, attr=None, time_interval=None, state=None, city=None):
     """
-    Show race pie chart.
+    Plot race pie chart.
     
     Args:
         data (DataFrame): DataFrame containing the shootings data.
-        time_interval (tuple of int, optional): Time interval to show, in years.
-        state (str, optional): State to show.
-        city (str, optional): City to show. "state" should be None if this parameter is used.
+        attr (str, optional): Group deaths by this attribute.
+        time_interval (tuple of int, optional): Time interval to consider, in years.
+        state (str, optional): State to plot.
+        city (str, optional): City to plot. "state" should be None if this parameter is used.
 
     Returns:
         None.
     """
     df = data.copy()
     start, stop = np.min(df.index.year), np.max(df.index.year)
-    title = "Race proportion"
+    title = "Race Proportion"
     if time_interval:
         start, stop = (str(year) for year in time_interval)
         df = df[start:stop]
     if state:
         df = df[df["State"] == state]
-        title += f" in the state of {state}"
+        title += f" in the State of {state}"
     elif city:
         df = df[df["City"] == city]
-        title += f" in the city of {city}"
+        title += f" in the City of {city}"
     else:
         title += f" in the US"
+    title += f" in the Years {start}-{stop}"
     if attr:
         df = df.pivot_table(
             values="State",
@@ -153,12 +155,66 @@ def race_pie(data, attr=None, time_interval=None, state=None, city=None):
             columns=attr,
             aggfunc="count"
         )
-        ax = df
+        axs = df.plot.pie(
+            subplots=True, 
+            labeldistance=None, 
+            title=title, 
+            figsize=(15, 7)
+        )
+        # plot a unique centered legend
+        _, legend = axs[0].get_legend_handles_labels()
+        plt.gcf().legend(legend, loc="lower center")
+        for ax in axs:
+            ax.get_legend().remove()
     else:
-        ax = df["Race"].value_counts().plot.pie()
-    title += f" in the years {start}-{stop}"
-    ax.set(title=title)
+        df["Race"].value_counts().plot.pie(title=title)
     
 
-def body_camera_use(data, state=None, city=None):
-    pass
+def top_arms(data, attr=None, top=5, percentage=False, time_interval=None, state=None, city=None):
+    """
+    Plot a summary of top "armed" category values.
+
+    Args:
+        data (DataFrame): DataFrame containing the shootings data.
+        attr (str, optional): Group deaths by this attribute.
+        top (int, default 5): Select this ammount of top arms.
+        percentage (bool, default False): Wether to plot in percentage.
+        time_interval (tuple of int, optional): Time interval to show, in years.
+        state (str, optional): State to plot.
+        city (str, optional): City to plot. "state" should be None if this parameter is used.
+
+    Returns:
+        None.
+    """
+    df = data.copy()
+    start, stop = np.min(df.index.year), np.max(df.index.year)
+    title = f"Top {top} Arm Usage"
+    if time_interval:
+        start, stop = (str(year) for year in time_interval)
+        df = df[start:stop]
+    if state:
+        df = df[df["State"] == state]
+        title += f" in the State of {state}"
+    elif city:
+        df = df[df["City"] == city]
+        title += f" in the City of {city}"
+    else:
+        title += f" in the US"
+    title += f" in the Years {start}-{stop}"
+    if attr:
+        df = df.pivot_table(
+            values="State",
+            index=attr,
+            columns="Armed",
+            aggfunc="count"
+        ).fillna(0).sort_values("Gun", ascending=False)
+        df.sort_values(by=df.index[0], axis="columns", ascending=False, inplace=True)
+        df = df.iloc[:, :top]
+    else:
+        df = df["Armed"].value_counts().sort_values(ascending=False)[:top]
+    if percentage:
+        df = df.transform(lambda row: row/sum(row)*100, axis="columns")
+        ylabel = "Deaths Percentage"
+    else:
+        ylabel = "Deaths"
+    df.plot.bar(title=title, ylabel=ylabel)
