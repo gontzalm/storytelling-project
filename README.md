@@ -1,4 +1,4 @@
-# us-fatal-police-shootings
+# us-police-shootings
 Storytelling project made in Ironhack Data Analytics Aug '20 cohort.
 
 ![](https://i.insider.com/502945c56bb3f7c466000000?width=600&format=jpeg&auto=webp)
